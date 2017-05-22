@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+
+# Set permissions and owner of files
+echo "Ensuring proper permissions for log and home dir of zabbix..."
+chown -R nc-zabbix:nc-zabbix /var/lib/nc_zabbix
+chmod -R 750 /var/lib/nc_zabbix
+
+echo "Ensuring proper permissions for the zabbix cron job..."
+chown root:root /etc/cron.d/nc-zabbix
+chmod 600 /etc/cron.d/nc-zabbix
+
+
+###################### SUDOERS SECTION ######################
+if [ -d /etc/sudoers.d ]; then
+
+    # Binaries allowed in sudoers file
+    cat='/bin/cat'
+    tail='/usr/bin/tail'
+    test='/usr/bin/test'
+    stat='/usr/bin/stat'
+    grep='/bin/grep'
+    find='/usr/bin/find'
+    iptables_save='/sbin/iptables-save'
+    socat='/usr/bin/socat'
+    ipvsadm='/sbin/ipvsadm'
+    hpacucli='/usr/sbin/hpacucli'
+    megacli='/opt/MegaRAID/MegaCli/MegaCli64'
+    mpt_status1='/usr/local/sbin/mpt-status'
+    mpt_status2='/usr/sbin/mpt-status'
+    mpt_status3='/usr/bin/mpt-status'
+    sas2ircu='/usr/sbin/sas2ircu'
+    ss=$(which ss)
+    docker='/usr/bin/docker'
+
+    # Check if the binary exists and is executable
+    # Only append those which exist (avoid excessive privileges)
+    # cat is used by default
+    exist="Cmnd_Alias NC_ZABBIX = $cat"
+
+    non_exist='# The following commands were not present during the zabbix monitoring script RPM install.
+    # Cmnd_Alias NC_ZABBIX = '
+    for bin in ${tail} ${test} ${stat} ${grep} ${find} ${iptables_save} ${socat} ${ipvsadm} ${hpacucli} ${megacli} ${mpt_status1} ${mpt_status2} ${mpt_status3} ${sas2ircu} ${ss} ${docker}
+    do
+        [ -x ${bin} ] && exist="${exist}, ${bin}"  || non_exist="${non_exist}, ${bin}"
+    done
+
+    # Create temp file for new sudoers file
+    TEMP_FILE=$(mktemp -p /tmp)
+    chown root.root ${TEMP_FILE}
+    chmod 440 ${TEMP_FILE}
+
+    # Append the new zabbix config
+    echo >> ${TEMP_FILE}
+    echo "$non_exist"                               >> ${TEMP_FILE}
+    echo "$exist"                                   >> ${TEMP_FILE}
+    echo 'Defaults:nc-zabbix !requiretty'              >> ${TEMP_FILE}
+    echo 'nc-zabbix          ALL = NOPASSWD: NC_ZABBIX'   >> ${TEMP_FILE}
+
+    # Place new sudoers file
+    mv ${TEMP_FILE} /etc/sudoers.d/nc-zabbix
+
+fi
+
+#############################################################
+
+# Restart nc-zabbix-agent
+if [ -d /run/systemd/system ]; then
+    echo "Restarting nc-zabbix-agent..."
+    systemctl restart nc-zabbix-agent
+elif [ -x /etc/init.d/nc-zabbix-agent ]; then
+    echo "Restarting nc-zabbix-agent..."
+    service nc-zabbix-agent restart
+fi

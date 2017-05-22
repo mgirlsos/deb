@@ -1,0 +1,12 @@
+Package: nc-zabbix-scripts
+Version: 1.0.6-1.ubuntu
+License: unknown
+Vendor: jenkins@srv-nc-bj-build1
+Architecture: all
+Maintainer: <jenkins@srv-nc-bj-build1>
+Installed-Size: 376
+Depends: nc-zabbix-agent, sudo
+Section: default
+Priority: extra
+Homepage: http://example.com/no-uri-given
+Description: no description given

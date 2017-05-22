@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+# If uninstalling, then remove cronjob, else do nothing
+if [ "$1" = "0" ] || [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
+    echo "Removing Cron job..."
+    rm -rf /etc/cron.d/nc_zabbix_cronjob > /dev/null 2>&1 || :
+    if [ -f /etc/sudoers.d/nc-zabbix ]; then
+        echo "Removing sudoers file..."
+        rm -rf /etc/sudoers.d/nc-zabbix > /dev/null 2>&1 || :
+    fi
+    if [ -f /etc/nc_zabbix/nc_zabbix_agentd.d/nc-zabbix-scripts.conf ]; then
+        echo "Removing nc-zabbix-scripts specific items..."
+        rm -rf /etc/nc_zabbix/nc_zabbix_agentd.d/nc-zabbix-scripts.conf > /dev/null 2>&1 || :
+    fi
+else
+    if [ -d /run/systemd/system ]; then
+        systemctl restart nc-zabbix-agent > /dev/null 2>&1 || :
+    else
+        service nc-zabbix-agent restart > /dev/null 2>&1 || :
+    fi
+fi

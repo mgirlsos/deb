@@ -1,0 +1,2 @@
+/etc/cron.d/nc-zabbix
+/etc/nc_zabbix/nc_zabbix_agentd.d/nc-zabbix-scripts.conf
